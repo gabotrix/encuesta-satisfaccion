@@ -129,9 +129,9 @@
     },
 
     {
-      tipo: "escalas", id: "calidad",
+      tipo: "escalas", id: "calidad", requerido: true,
       titulo: "Califique la calidad del servicio",
-      ayuda: "De 1 (muy malo) a 5 (excelente). Deje en blanco lo que no aplique.",
+      ayuda: "De 1 (muy malo) a 5 (excelente). Los cinco criterios.",
       criterios: [
         { id: "cal_servicio", t: "Calidad del servicio recibido" },
         { id: "cal_tiempos",  t: "Cumplimiento de tiempos y plazos" },
@@ -142,7 +142,7 @@
     },
 
     {
-      tipo: "eleccion", id: "facilidad", opcional: true,
+      tipo: "eleccion", id: "facilidad", requerido: true,
       titulo: "¿Qué tan fácil fue contactarnos cuando lo necesitó?",
       opciones: [
         { v: "muy_facil",   t: "Muy fácil",                  e: "⚡" },
@@ -154,7 +154,7 @@
     },
 
     {
-      tipo: "eleccion", id: "oportunidad", opcional: true,
+      tipo: "eleccion", id: "oportunidad", requerido: true,
       titulo: "¿Recibió respuesta oportuna a sus solicitudes o inquietudes?",
       opciones: [
         { v: "siempre",      t: "Siempre",      e: "🏅" },
@@ -166,7 +166,7 @@
     },
 
     {
-      tipo: "eleccion", id: "resolucion", opcional: true,
+      tipo: "eleccion", id: "resolucion", requerido: true,
       titulo: "¿Su solicitud o problema fue resuelto satisfactoriamente?",
       opciones: [
         { v: "completa",  t: "Sí, completamente", e: "✅" },
@@ -177,7 +177,7 @@
     },
 
     {
-      tipo: "abiertas", id: "abiertas1", opcional: true,
+      tipo: "abiertas", id: "abiertas1", requerido: true,
       titulo: "Cuéntenos con sus palabras",
       ayuda: "Lo que escriba aquí es lo que más nos sirve para cambiar cosas.",
       campos: [
@@ -191,6 +191,7 @@
     {
       tipo: "abiertas", id: "abiertas2", opcional: true,
       titulo: "Una última idea",
+      ayuda: "Las dos se pueden dejar en blanco. Es el único sitio de la encuesta donde no le pedimos nada.",
       campos: [
         { id: "adicional", t: "¿Hay algún servicio adicional que le gustaría que ofreciéramos?",
           marcador: "Algo que hoy resuelve con otro proveedor, o con nadie…", max: 2000 },
@@ -199,7 +200,7 @@
       ]
     },
 
-    { tipo: "seguimiento", id: "seguimiento" },
+    { tipo: "seguimiento", id: "seguimiento", requerido: true },
 
     { tipo: "gracias" }
   ];
@@ -291,8 +292,8 @@
       h("span", { class: "epigrafe" }, [h("span", { class: "punto" }), "Encuesta de satisfacción"]),
       h("h1", {}, ["Su opinión nos ayuda a mejorar."]),
       h("p", { class: "ayuda" }, [
-        "Son diecisiete preguntas cortas y sólo tres son obligatorias. " +
-        "Puede saltarse todo lo demás."
+        "Son diecisiete preguntas cortas. Las contesta en menos de tres minutos, " +
+        "y la última pantalla la puede dejar en blanco."
       ]),
       h("div", { class: "datos-portada" }, [
         h("span", { class: "dato" }, [svg("M12 6v6l4 2M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z"),
@@ -300,7 +301,7 @@
         h("span", { class: "dato" }, [svg("M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"),
           "Respuestas confidenciales"]),
         h("span", { class: "dato" }, [svg("M20 6 9 17l-5-5"),
-          "Sólo tres preguntas obligatorias"])
+          "Una pregunta por pantalla"])
       ]),
       h("div", { class: "acciones" }, [
         h("button", {
@@ -522,6 +523,30 @@
   function pintarEscalas(paso) {
     var lista = h("div", {});
 
+    /** ¿Están calificados los cinco criterios? */
+    function completo() {
+      return paso.criterios.every(function (c) { return respuestas[c.id]; });
+    }
+
+    // Suelta o vuelve a bloquear el botón según falten criterios. Se llama en
+    // cada estrella, no al pulsar Continuar: el contador de arriba y el botón
+    // tienen que decir lo mismo en todo momento.
+    function revisar() {
+      var b = document.getElementById("btn-siguiente");
+      if (b && paso.requerido) b.disabled = !completo();
+      if (falta) {
+        var n = paso.criterios.filter(function (c) { return !respuestas[c.id]; }).length;
+        falta.textContent = n
+          ? (n === 1 ? "Falta un criterio" : "Faltan " + n + " criterios")
+          : "Los cinco calificados";
+        falta.setAttribute("data-listo", n ? "false" : "true");
+      }
+    }
+
+    var falta = paso.requerido
+      ? h("div", { class: "falta", "aria-live": "polite" })
+      : null;
+
     paso.criterios.forEach(function (c, i) {
       var actual = respuestas[c.id];
       var valor = h("span", {
@@ -556,11 +581,13 @@
             type: "button", class: "estrella", role: "radio",
             "aria-label": v + " de 5 · " + PALABRAS[v - 1],
             onclick: function () {
-              // Volver a tocar la misma estrella quita la nota: es la única
-              // forma de dejar en blanco algo que ya se calificó sin recargar.
+              // Volver a tocar la misma estrella quita la nota. Con el paso
+              // obligatorio eso vuelve a bloquear el botón, que es lo correcto:
+              // se puede corregir una nota puesta por error sin quedarse
+              // atrapado, pero no se puede seguir sin las cinco.
               respuestas[c.id] = respuestas[c.id] === v ? undefined : v;
               if (respuestas[c.id] === undefined) delete respuestas[c.id];
-              guardar(); toque(); repintar();
+              guardar(); toque(); repintar(); revisar();
             }
           }, [svg(ESTRELLA, { relleno: "currentColor" })]);
           fila.appendChild(b);
@@ -573,7 +600,7 @@
         ev.preventDefault();
         var v = Math.min(5, Math.max(1, (respuestas[c.id] || 0) + salto));
         respuestas[c.id] = v;
-        guardar(); repintar();
+        guardar(); repintar(); revisar();
         fila.children[v - 1].focus();
       });
 
@@ -581,15 +608,34 @@
       lista.appendChild(caja);
     });
 
-    return h("div", {}, encabezado(paso).concat([
+    var bloque = h("div", {}, encabezado(paso).concat([
       lista,
-      acciones({ siguiente: "Continuar", pista: false })
+      falta,
+      acciones({
+        siguiente: "Continuar",
+        bloqueado: paso.requerido && !completo(),
+        pista: false
+      })
     ]));
+    revisar();
+    return bloque;
   }
 
   /* -------------------------------------------------------- preguntas abiertas */
 
   function pintarAbiertas(paso) {
+    /** ¿Están escritos todos los campos de esta pantalla? */
+    function completo() {
+      return paso.campos.every(function (c) {
+        return (respuestas[c.id] || "").trim().length > 0;
+      });
+    }
+
+    function revisar() {
+      var b = document.getElementById("btn-siguiente");
+      if (b && paso.requerido) b.disabled = !completo();
+    }
+
     var campos = paso.campos.map(function (c) {
       var area = h("textarea", {
         id: "campo-" + c.id, maxlength: c.max, placeholder: c.marcador, rows: "3"
@@ -602,7 +648,7 @@
         contador.style.visibility = area.value.length > c.max * 0.6 ? "visible" : "hidden";
       }
       area.addEventListener("input", function () {
-        respuestas[c.id] = area.value; guardar(); refrescar();
+        respuestas[c.id] = area.value; guardar(); refrescar(); revisar();
       });
       refrescar();
 
@@ -612,8 +658,13 @@
     });
 
     var bloque = h("div", {}, encabezado(paso).concat(campos).concat([
-      acciones({ siguiente: "Continuar", pista: "Puede dejarlas en blanco" })
+      acciones({
+        siguiente: "Continuar",
+        bloqueado: paso.requerido && !completo(),
+        pista: paso.requerido ? "Las dos hay que contestarlas" : "Puede dejarlas en blanco"
+      })
     ]));
+    revisar();
 
     setTimeout(function () {
       var a = bloque.querySelector("textarea");
@@ -670,7 +721,23 @@
       });
       desplegable.setAttribute("data-abierto", v ? "true" : "false");
       if (v) setTimeout(function () { entrada.focus(); }, 320);
+      revisar();
     }
+
+    // Hay que elegir sí o no, y si es sí hace falta el dato: un "sí, contácteme"
+    // sin correo ni teléfono no sirve para nada y el panel lo escondió igual.
+    function completo() {
+      if (typeof respuestas.desea_contacto !== "boolean") return false;
+      return respuestas.desea_contacto === false ||
+             (respuestas.contacto || "").trim().length > 0;
+    }
+
+    function revisar() {
+      var b = document.getElementById("btn-enviar");
+      if (b) b.disabled = !completo();
+    }
+
+    entrada.addEventListener("input", revisar);
 
     if (respuestas.desea_contacto === true) desplegable.setAttribute("data-abierto", "true");
 
@@ -678,14 +745,18 @@
 
     var bloque = h("div", {}, encabezado({
       titulo: "¿Desea que lo contactemos para ampliar sus comentarios?",
-      ayuda: "Sólo si usted quiere. El dato de contacto no se guarda si responde que no."
+      ayuda: "Elija una de las dos. El dato de contacto no se guarda si responde que no."
     }).concat([
       lista, desplegable,
       h("div", { class: "acciones" }, [
         h("button", { type: "button", class: "pill pill-suave", texto: "Atrás", onclick: atras }),
-        h("button", {
-          type: "button", class: "pill pill-marca", id: "btn-enviar", onclick: enviar
-        }, [document.createTextNode("Enviar respuestas"), svg("M5 12h14M13 6l6 6-6 6")]),
+        (function () {
+          var b = h("button", {
+            type: "button", class: "pill pill-marca", id: "btn-enviar", onclick: enviar
+          }, [document.createTextNode("Enviar respuestas"), svg("M5 12h14M13 6l6 6-6 6")]);
+          b.disabled = !completo();
+          return b;
+        })(),
         // El campo trampa vive aquí, en el paso que envía: un robot que rellene
         // el formulario lo marcará y la función descartará el envío.
         h("input", { type: "text", class: "trampa", id: "website", name: "website",
@@ -704,6 +775,17 @@
     var btn = document.getElementById("btn-enviar");
     var error = escena.querySelector(".error");
     error.hidden = true;
+
+    // El botón ya nace bloqueado, pero esto cubre el Enter y cualquier camino
+    // que no pase por él. Es la última red de la página; la de verdad está en
+    // la edge function.
+    var falta = PASOS.filter(function (x) { return x.requerido && !respondido(x); });
+    if (falta.length) {
+      error.hidden = false;
+      error.textContent = "Falta contestar: " +
+        falta.map(function (x) { return x.titulo || "el seguimiento"; }).join(" · ");
+      return;
+    }
 
     enviando = true;
     btn.disabled = true;
@@ -728,7 +810,7 @@
       mejorar: respuestas.mejorar,
       adicional: respuestas.adicional,
       comentarios: respuestas.comentarios,
-      desea_contacto: respuestas.desea_contacto === true,
+      desea_contacto: respuestas.desea_contacto,
       contacto: respuestas.contacto,
       website: trampa ? trampa.value : "",
       origen: location.href.slice(0, 300),
@@ -818,8 +900,26 @@
   /* ------------------------------------------------------------ navegación */
 
   /** ¿Está contestado este paso? Un texto en blanco o con sólo espacios no
-   *  cuenta, y el 0 del NPS sí: por eso no vale preguntar por el valor a secas. */
+   *  cuenta, y el 0 del NPS sí: por eso no vale preguntar por el valor a secas.
+   *
+   *  Ojo con los pasos que agrupan varias respuestas: `calidad` y las dos
+   *  pantallas de preguntas abiertas NO guardan nada bajo su propio id, sino un
+   *  campo por criterio. Preguntar por `respuestas[paso.id]` en esos daba
+   *  siempre falso y dejaba el botón muerto para siempre. */
   function respondido(paso) {
+    if (paso.tipo === "escalas") {
+      return paso.criterios.every(function (c) { return respuestas[c.id]; });
+    }
+    if (paso.tipo === "abiertas") {
+      return paso.campos.every(function (c) {
+        return (respuestas[c.id] || "").trim().length > 0;
+      });
+    }
+    if (paso.tipo === "seguimiento") {
+      if (typeof respuestas.desea_contacto !== "boolean") return false;
+      return respuestas.desea_contacto === false ||
+             (respuestas.contacto || "").trim().length > 0;
+    }
     var v = respuestas[paso.id];
     if (v === undefined || v === null) return false;
     return typeof v === "string" ? v.trim().length > 0 : true;
@@ -852,7 +952,7 @@
       // adelantar aquí también saltaría dos pantallas de una vez.
       if (document.activeElement.tagName === "BUTTON" || document.activeElement.tagName === "A") return;
       ev.preventDefault();
-      if (paso.tipo === "seguimiento") enviar();
+      if (paso.tipo === "seguimiento") { if (respondido(paso)) enviar(); }
       else if (paso.tipo === "portada") { arranque = Date.now(); adelante(); }
       else adelante();
       return;

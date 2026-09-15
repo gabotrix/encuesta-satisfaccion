@@ -89,20 +89,34 @@ ahí para reintentar.
 
 ## Decisiones que no se ven en el código
 
-**Sólo tres preguntas son obligatorias** — el nombre o empresa, la satisfacción
-general y la recomendación. Una encuesta que exige diecisiete respuestas se
-abandona a la mitad y no deja ninguna; así al menos quedan las que sostienen los
-indicadores.
+**Todo es obligatorio menos la última pantalla** (decisión del 15-sep-2026; antes
+se podía responder anónimo y saltarse casi todo). La única que admite el blanco
+es "Una última idea" — `adicional` y `comentarios`.
 
-**No se puede responder de forma anónima** (decisión del 15-sep-2026; antes sí se
-podía). El nombre se exige en tres sitios: el botón no se suelta hasta que hay
-algo escrito, la edge function devuelve un 400 si llega en blanco, y la columna
-`nombre` es `NOT NULL`. Para volver atrás hay que deshacer los tres — sólo con la
-página no basta, porque la página se puede saltar.
+Cada regla vive en **tres sitios**, y hay que deshacer los tres para revertirla:
 
-Conviene saber el precio de esa decisión: una encuesta firmada recibe notas más
-altas y críticas más suaves que una anónima. Si algún día las respuestas parecen
-sospechosamente buenas, éste es el primer sitio donde mirar.
+| Capa | Qué hace |
+|---|---|
+| La página | El botón nace bloqueado y no se suelta hasta que el paso está completo |
+| `encuesta-enviar` | Devuelve un 400 con el nombre de lo que falta |
+| La tabla | `NOT NULL` en las columnas, y un CHECK para el contacto condicional |
+
+Sólo con la página no basta: se puede abrir la consola del navegador y llamar a
+la función a mano. La función es la única puerta, así que es el único sitio
+donde la regla es real.
+
+**"Sí, contácteme" exige dejar un dato.** Antes se podía decir que sí y no dejar
+nada, y el panel lo escondía igual porque filtra por `desea_contacto and contacto
+is not null`: era un sí que no servía para nada.
+
+Dos cosas que conviene tener presentes al leer los resultados:
+
+- **Una encuesta firmada recibe notas más altas y críticas más suaves** que una
+  anónima. Si las respuestas parecen sospechosamente buenas, éste es el primer
+  sitio donde mirar.
+- **Obligar las dos preguntas abiertas ensucia justo lo más valioso**: quien no
+  tiene nada que decir escribe "nada", "." o "ok" para poder pasar. Al contar
+  respuestas de texto, descartar las de menos de tres o cuatro caracteres.
 
 **El dato de contacto no se guarda si la persona dice que no** quiere que la
 contacten, aunque venga en el cuerpo de la petición. Lo filtra la función, no la

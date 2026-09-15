@@ -658,6 +658,23 @@ h2 {
   .opcion { padding: 15px 16px; }
 }
 
+/* Cuántos criterios faltan en la pantalla de calificaciones. Sin esto, el botón
+ * bloqueado no dice por qué: las cinco filas se parecen y es fácil dejarse una
+ * sin tocar al bajar. */
+.falta {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--medio);
+}
+
+.falta[data-listo="true"] { color: var(--bien); }
+
+.falta::before {
+  content: "•";
+  margin-right: 8px;
+}
+
 .error {
   margin-top: 16px;
   padding: 13px 16px;

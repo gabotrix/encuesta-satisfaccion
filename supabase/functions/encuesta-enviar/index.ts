@@ -80,18 +80,59 @@ Deno.serve(async (req) => {
   // que lo pillamos; simplemente no se guarda nada.
   if (texto(c.website, 100)) return responde({ ok: true, id: null });
 
-  // Las tres únicas obligatorias. El resto puede ir en blanco: una encuesta que
-  // exige diecisiete respuestas se abandona a la mitad y no deja ninguna.
+  // Desde el 15-sep-2026 la encuesta es obligatoria de principio a fin: se quitó
+  // el anonimato y se quitó la posibilidad de saltarse preguntas. La única
+  // pantalla que sigue admitiendo el blanco es "Una última idea" (`adicional` y
+  // `comentarios`).
   //
-  // El nombre pasó a ser obligatorio el 15-sep-2026: se quitó la opción de
-  // responder de forma anónima. Se comprueba aquí y no sólo en la página,
-  // porque la página se puede saltar; esta función es la única puerta.
+  // Se comprueba aquí y no sólo en la página, porque la página se puede
+  // saltar: basta abrir la consola del navegador y llamar a esta función a mano.
+  // Esta es la única puerta, así que es el único sitio donde la regla es real.
   const nombre = texto(c.nombre, 200);
   const satisfaccion = opcion(c.satisfaccion, SATISFACCION);
   const nps = entero(c.nps, 0, 10);
+  const facilidad = opcion(c.facilidad, FACILIDAD);
+  const oportunidad = opcion(c.oportunidad, OPORTUNIDAD);
+  const resolucion = opcion(c.resolucion, RESOLUCION);
+  const masValora = texto(c.mas_valora, 2000);
+  const mejorar = texto(c.mejorar, 2000);
+
+  const CALIDAD = [
+    ["cal_servicio", "la calidad del servicio recibido"],
+    ["cal_tiempos", "el cumplimiento de tiempos y plazos"],
+    ["cal_trato", "la amabilidad y trato del personal"],
+    ["cal_claridad", "la claridad de la información entregada"],
+    ["cal_precio", "la relación entre precio y valor"],
+  ] as const;
+
   if (!nombre) return responde({ error: "Falta el nombre o la empresa" }, 400);
   if (!satisfaccion) return responde({ error: "Falta la satisfacción general" }, 400);
   if (nps === null) return responde({ error: "Falta la recomendación (0 a 10)" }, 400);
+
+  const calidad: Record<string, number> = {};
+  for (const [campo, comoSeLlama] of CALIDAD) {
+    const v = entero(c[campo], 1, 5);
+    if (v === null) return responde({ error: `Falta calificar ${comoSeLlama}` }, 400);
+    calidad[campo] = v;
+  }
+
+  if (!facilidad) return responde({ error: "Falta la facilidad para contactarnos" }, 400);
+  if (!oportunidad) return responde({ error: "Falta si la respuesta fue oportuna" }, 400);
+  if (!resolucion) return responde({ error: "Falta si la solicitud se resolvió" }, 400);
+  if (!masValora) return responde({ error: "Falta qué es lo que más valora" }, 400);
+  if (!mejorar) return responde({ error: "Falta qué deberíamos mejorar" }, 400);
+
+  // Aquí sí importa distinguir "no quiero" de "no contestó". Por eso se exige un
+  // booleano de verdad y no se acepta que venga ausente: antes la página mandaba
+  // `=== true`, que convertía el silencio en un "no" silencioso.
+  if (typeof c.desea_contacto !== "boolean") {
+    return responde({ error: "Falta decir si podemos contactarlo" }, 400);
+  }
+  const desea = c.desea_contacto;
+  const contacto = desea ? texto(c.contacto, 200) : null;
+  if (desea && !contacto) {
+    return responde({ error: "Falta el correo o el teléfono de contacto" }, 400);
+  }
 
   const db = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -120,27 +161,23 @@ Deno.serve(async (req) => {
     }
   }
 
-  const desea = c.desea_contacto === true;
   const fila = {
     nombre,
     satisfaccion,
     nps,
-    cal_servicio: entero(c.cal_servicio, 1, 5),
-    cal_tiempos: entero(c.cal_tiempos, 1, 5),
-    cal_trato: entero(c.cal_trato, 1, 5),
-    cal_claridad: entero(c.cal_claridad, 1, 5),
-    cal_precio: entero(c.cal_precio, 1, 5),
-    facilidad: opcion(c.facilidad, FACILIDAD),
-    oportunidad: opcion(c.oportunidad, OPORTUNIDAD),
-    resolucion: opcion(c.resolucion, RESOLUCION),
-    mas_valora: texto(c.mas_valora, 2000),
-    mejorar: texto(c.mejorar, 2000),
+    ...calidad,
+    facilidad,
+    oportunidad,
+    resolucion,
+    mas_valora: masValora,
+    mejorar,
+    // Las dos únicas que siguen admitiendo el blanco: "Una última idea".
     adicional: texto(c.adicional, 2000),
     comentarios: texto(c.comentarios, 2000),
     desea_contacto: desea,
-    // Sin la casilla marcada no se guarda el dato de contacto aunque venga en
-    // el cuerpo: si dijo que no quiere que lo llamen, no nos quedamos su correo.
-    contacto: desea ? texto(c.contacto, 200) : null,
+    // Si dijo que no quiere que lo llamen, no nos quedamos su correo aunque
+    // venga en el cuerpo.
+    contacto,
     origen: texto(c.origen, 300),
     ip_hash: ipHash,
     duracion_ms: entero(c.duracion_ms, 0, 86400000),

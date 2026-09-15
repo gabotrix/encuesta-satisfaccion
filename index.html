@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Encuesta de satisfacción · GABOTRIX</title>
+<meta name="description" content="Su opinión nos ayuda a mejorar. Esta encuesta toma menos de 3 minutos.">
+<meta name="theme-color" content="#05070d">
+<meta name="robots" content="noindex">
+
+<meta property="og:title" content="Encuesta de satisfacción · GABOTRIX">
+<meta property="og:description" content="Su opinión nos ayuda a mejorar. Toma menos de 3 minutos.">
+<meta property="og:type" content="website">
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icono-32.png">
+<link rel="icon" href="assets/favicon.ico" sizes="48x48 32x32 16x16">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..800&display=swap">
+<link rel="stylesheet" href="assets/encuesta.css">
+</head>
+<body>
+
+<div class="envoltura">
+
+  <header class="cabecera">
+    <div class="cabecera-fila">
+      <img class="logo" src="assets/gabotrix-logo.png" alt="GABOTRIX">
+      <!-- Vacío hasta que arranca la encuesta: en la portada no hay paso que contar. -->
+      <span class="paso-de" id="contador-pasos" aria-live="polite"></span>
+    </div>
+    <div class="barra" role="progressbar" aria-label="Avance de la encuesta"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barra">
+      <div class="barra-fill" id="barra-fill"></div>
+    </div>
+  </header>
+
+  <main class="escena">
+    <!-- Todo lo de dentro lo dibuja assets/encuesta.js. Sin JavaScript no hay
+         encuesta: se avisa aquí mismo en vez de dejar una página en blanco. -->
+    <div class="paso" id="escena">
+      <noscript>
+        <div class="portada-marco">
+          <h1>Necesitamos JavaScript</h1>
+          <p class="ayuda">Esta encuesta es interactiva y no funciona con JavaScript
+          desactivado. Actívelo y vuelva a cargar la página, o escríbanos a
+          <a href="mailto:contacto@gabotrix.com">contacto@gabotrix.com</a>.</p>
+        </div>
+      </noscript>
+    </div>
+  </main>
+
+  <footer class="pie">
+    Sus respuestas son confidenciales y se usan únicamente para mejorar nuestro servicio.
+    · <a href="https://gabotrix.com" rel="noopener">GABOTRIX</a>
+  </footer>
+
+</div>
+
+<script src="assets/encuesta.js"></script>
+</body>
+</html>

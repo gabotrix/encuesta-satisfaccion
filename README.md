@@ -1,0 +1,113 @@
+# Encuesta de satisfacción del cliente · GABOTRIX
+
+Encuesta interactiva para clientes, publicada en GitHub Pages, con panel de
+resultados propio. Sin framework ni compilación: los archivos se sirven tal cual.
+
+- **Encuesta** → `https://gabotrix.github.io/encuesta-satisfaccion/`
+- **Panel** → `https://gabotrix.github.io/encuesta-satisfaccion/panel.html`
+
+## Qué hay aquí
+
+```
+index.html            la encuesta
+panel.html            los resultados, tras clave
+assets/encuesta.css   estilo de las dos páginas (fondo, pills, campos)
+assets/encuesta.js    el guion de la encuesta: preguntas, avance y envío
+assets/panel.css      lo propio del tablero
+assets/panel.js       consulta y pinta los resultados
+supabase/functions/   las dos edge functions, copia de lo desplegado
+```
+
+Las preguntas viven en **una sola lista**, `PASOS` en `assets/encuesta.js`.
+Añadir, quitar o reordenar una pregunta es tocar esa lista; el contador, la barra
+de avance y el teclado se ajustan solos.
+
+## Dónde caen las respuestas
+
+Supabase **Pagina Web Gabotrix** (`tzuipgrkizsffgoxdrkg`, servidor MCP
+`supabase-webgabotrix`), tabla `public.encuesta_satisfaccion`.
+
+La tabla tiene **RLS activo y ninguna política**, y `anon` no tiene permisos
+sobre ella. Está comprobado: con la clave publicable real, un `SELECT` y un
+`INSERT` directos por PostgREST devuelven `42501 permission denied`. La única
+puerta son dos edge functions, que entran con `service_role`:
+
+| Función | Qué hace |
+|---|---|
+| `encuesta-enviar` | Recibe una respuesta. Valida cada valor contra las listas cerradas del formulario, descarta el campo trampa y limita a 8 envíos por hora y 30 por día desde una misma IP. |
+| `encuesta-resultados` | Devuelve las cifras y las respuestas, o el CSV. Pide la clave del panel en la cabecera `x-clave-panel`. |
+
+Las dos van con `verify_jwt` en **false** a propósito: quien responde la encuesta
+es un cliente, no un usuario de Supabase, y no hay sesión que verificar. La clave
+publicable de Supabase **no aparece en ninguna de las dos páginas**.
+
+### Por qué no se inserta directo desde la página
+
+La tabla `solicitudes` de este mismo proyecto sí deja insertar a `anon`. Aquí no:
+esa clave viaja en el HTML y cualquiera puede abrir la consola del navegador y
+llenar la tabla de basura. Pasando por la función, un valor que no esté en la
+lista no entra.
+
+## La clave del panel
+
+Está en `CLAVE-PANEL.txt`, que **no se sube al repositorio**. Se guarda en
+`sessionStorage`: al cerrar la pestaña hay que volver a ponerla.
+
+Su SHA-256 con sal vive en `public.encuesta_panel`. Para cambiarla:
+
+```sql
+-- con la sal que ya está en la tabla, o una nueva
+update public.encuesta_panel
+   set clave_hash = encode(extensions.digest(sal || ':' || 'LA-CLAVE-NUEVA', 'sha256'), 'hex'),
+       rotada_en  = now();
+```
+
+No hace falta volver a desplegar nada: la función lee la clave de la tabla en
+cada consulta.
+
+## Probar en local
+
+```bash
+python -m http.server 8794 --directory encuesta-satisfaccion
+```
+
+Atajos útiles en la URL:
+
+| Parámetro | Para qué |
+|---|---|
+| `?prueba=1` | Marca la respuesta como de prueba. Entra a la tabla pero el panel la deja fuera de las cifras salvo que se active «Incluir pruebas». |
+| `?paso=4` | Abre directo esa pregunta, sin responder las anteriores. |
+
+Las respuestas a medias se guardan en `localStorage` en cada toque, y sólo se
+borran **cuando el envío ya está confirmado**: si se cae la red, lo escrito sigue
+ahí para reintentar.
+
+## Decisiones que no se ven en el código
+
+**Sólo dos preguntas son obligatorias** — la satisfacción general y la
+recomendación. Una encuesta que exige diecisiete respuestas se abandona a la
+mitad y no deja ninguna; así al menos quedan las dos que sostienen los
+indicadores.
+
+**El dato de contacto no se guarda si la persona dice que no** quiere que la
+contacten, aunque venga en el cuerpo de la petición. Lo filtra la función, no la
+página.
+
+**Las opciones únicas avanzan solas** tras 420 ms (900 ms en el NPS, que muestra
+una lectura debajo). Sin esa pausa la pantalla cambia antes de que el ojo
+registre lo que eligió y parece un error.
+
+**Los colores de las gráficas del panel salen del validador** de la casa, no del
+gusto. El rojo y el verde «de siempre» fallaban la separación para daltonismo
+(ΔE 3.9 en deuteranopía, sobre un mínimo de 8). El par que quedó
+—`#bc2c00` / `#00ad71` con gris `#7a8699` en medio— llega a 14 y pasa las seis
+pruebas sobre fondo oscuro.
+
+**En móvil la escala del NPS baja a dos filas de seis.** Once casillas cuadradas
+no caben en 375 px: la del 10 quedaba fuera de la pantalla.
+
+## Qué no tiene
+
+- No avisa por correo cuando llega una respuesta.
+- No borra ni corrige respuestas desde el panel; eso se hace por SQL.
+- El panel trae hasta 5.000 respuestas de una vez. Pasado eso hay que paginar.

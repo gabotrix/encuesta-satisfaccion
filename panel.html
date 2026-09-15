@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resultados de la encuesta · GABOTRIX</title>
+<meta name="theme-color" content="#05070d">
+<!-- Aunque esté tras clave, que no salga en buscadores. -->
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icono-32.png">
+<link rel="icon" href="assets/favicon.ico" sizes="48x48 32x32 16x16">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..800&display=swap">
+<!-- encuesta.css trae el fondo, los pills y los campos; panel.css sólo lo propio
+     del tablero. Así los dos lados de la herramienta no se despintan por
+     separado cuando se toca un color. -->
+<link rel="stylesheet" href="assets/encuesta.css">
+<link rel="stylesheet" href="assets/panel.css">
+</head>
+<body>
+
+<div class="envoltura">
+  <main class="escena" id="escena">
+    <noscript>
+      <div class="portada-marco">
+        <h1>Necesitamos JavaScript</h1>
+        <p class="ayuda">Este panel consulta los resultados en vivo y no funciona
+        con JavaScript desactivado.</p>
+      </div>
+    </noscript>
+  </main>
+</div>
+
+<script src="assets/panel.js"></script>
+</body>
+</html>

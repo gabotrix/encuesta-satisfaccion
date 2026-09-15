@@ -102,9 +102,9 @@
     { tipo: "portada" },
 
     {
-      tipo: "texto", id: "nombre", opcional: true,
+      tipo: "texto", id: "nombre", requerido: true,
       titulo: "¿Con quién tenemos el gusto?",
-      ayuda: "Puede dejarlo en blanco si prefiere responder de forma anónima.",
+      ayuda: "Necesitamos saber quién responde para poder darle seguimiento.",
       etiqueta: "Nombre o empresa",
       marcador: "P. ej. Constructora del Río S.A.S.",
       max: 200
@@ -291,7 +291,7 @@
       h("span", { class: "epigrafe" }, [h("span", { class: "punto" }), "Encuesta de satisfacción"]),
       h("h1", {}, ["Su opinión nos ayuda a mejorar."]),
       h("p", { class: "ayuda" }, [
-        "Son diecisiete preguntas cortas y sólo dos son obligatorias. " +
+        "Son diecisiete preguntas cortas y sólo tres son obligatorias. " +
         "Puede saltarse todo lo demás."
       ]),
       h("div", { class: "datos-portada" }, [
@@ -299,8 +299,8 @@
           "Menos de 3 minutos"]),
         h("span", { class: "dato" }, [svg("M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"),
           "Respuestas confidenciales"]),
-        h("span", { class: "dato" }, [svg("M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z"),
-          "Anónima si usted quiere"])
+        h("span", { class: "dato" }, [svg("M20 6 9 17l-5-5"),
+          "Sólo tres preguntas obligatorias"])
       ]),
       h("div", { class: "acciones" }, [
         h("button", {
@@ -331,12 +331,17 @@
         h("label", { for: "campo-" + paso.id, texto: paso.etiqueta }),
         entrada
       ]),
-      acciones({ siguiente: (respuestas[paso.id] || "").trim() ? "Continuar" : "Prefiero no decirlo" })
+      acciones({
+        siguiente: "Continuar",
+        bloqueado: paso.requerido && !(respuestas[paso.id] || "").trim()
+      })
     ]));
 
+    // El botón se suelta en cuanto hay algo escrito. Se comprueba en cada tecla
+    // y no al pulsar: un botón que no responde sin decir por qué desespera.
     entrada.addEventListener("input", function () {
       var b = document.getElementById("btn-siguiente");
-      if (b) b.firstChild.nodeValue = entrada.value.trim() ? "Continuar" : "Prefiero no decirlo";
+      if (b && paso.requerido) b.disabled = !entrada.value.trim();
     });
 
     setTimeout(function () { entrada.focus(); }, 380);
@@ -812,9 +817,18 @@
 
   /* ------------------------------------------------------------ navegación */
 
+  /** ¿Está contestado este paso? Un texto en blanco o con sólo espacios no
+   *  cuenta, y el 0 del NPS sí: por eso no vale preguntar por el valor a secas. */
+  function respondido(paso) {
+    var v = respuestas[paso.id];
+    if (v === undefined || v === null) return false;
+    return typeof v === "string" ? v.trim().length > 0 : true;
+  }
+
+
   function adelante() {
     var paso = PASOS[indice];
-    if (paso.requerido && (respuestas[paso.id] === undefined || respuestas[paso.id] === null)) return;
+    if (paso.requerido && !respondido(paso)) return;
     if (indice >= PASOS.length - 1) return;
     indice++;
     direccion = 1;

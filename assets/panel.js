@@ -375,7 +375,7 @@
 
     return h("article", { class: "comentario" }, [
       h("div", { class: "comentario-cabeza" }, [
-        h("span", { class: "comentario-quien", texto: r.nombre || "Anónimo" }),
+        h("span", { class: "comentario-quien", texto: r.nombre || "Sin nombre" }),
         h("span", { class: "insignia", style: "background:" + COLOR[tramo(r.nps)],
                     texto: "NPS " + r.nps }),
         h("span", { texto: ETIQUETAS[r.satisfaccion] || r.satisfaccion }),

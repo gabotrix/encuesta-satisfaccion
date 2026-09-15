@@ -80,10 +80,16 @@ Deno.serve(async (req) => {
   // que lo pillamos; simplemente no se guarda nada.
   if (texto(c.website, 100)) return responde({ ok: true, id: null });
 
-  // Las dos únicas obligatorias. El resto puede ir en blanco: una encuesta que
+  // Las tres únicas obligatorias. El resto puede ir en blanco: una encuesta que
   // exige diecisiete respuestas se abandona a la mitad y no deja ninguna.
+  //
+  // El nombre pasó a ser obligatorio el 15-sep-2026: se quitó la opción de
+  // responder de forma anónima. Se comprueba aquí y no sólo en la página,
+  // porque la página se puede saltar; esta función es la única puerta.
+  const nombre = texto(c.nombre, 200);
   const satisfaccion = opcion(c.satisfaccion, SATISFACCION);
   const nps = entero(c.nps, 0, 10);
+  if (!nombre) return responde({ error: "Falta el nombre o la empresa" }, 400);
   if (!satisfaccion) return responde({ error: "Falta la satisfacción general" }, 400);
   if (nps === null) return responde({ error: "Falta la recomendación (0 a 10)" }, 400);
 
@@ -116,7 +122,7 @@ Deno.serve(async (req) => {
 
   const desea = c.desea_contacto === true;
   const fila = {
-    nombre: texto(c.nombre, 200),
+    nombre,
     satisfaccion,
     nps,
     cal_servicio: entero(c.cal_servicio, 1, 5),

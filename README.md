@@ -89,10 +89,20 @@ ahí para reintentar.
 
 ## Decisiones que no se ven en el código
 
-**Sólo dos preguntas son obligatorias** — la satisfacción general y la
-recomendación. Una encuesta que exige diecisiete respuestas se abandona a la
-mitad y no deja ninguna; así al menos quedan las dos que sostienen los
+**Sólo tres preguntas son obligatorias** — el nombre o empresa, la satisfacción
+general y la recomendación. Una encuesta que exige diecisiete respuestas se
+abandona a la mitad y no deja ninguna; así al menos quedan las que sostienen los
 indicadores.
+
+**No se puede responder de forma anónima** (decisión del 15-sep-2026; antes sí se
+podía). El nombre se exige en tres sitios: el botón no se suelta hasta que hay
+algo escrito, la edge function devuelve un 400 si llega en blanco, y la columna
+`nombre` es `NOT NULL`. Para volver atrás hay que deshacer los tres — sólo con la
+página no basta, porque la página se puede saltar.
+
+Conviene saber el precio de esa decisión: una encuesta firmada recibe notas más
+altas y críticas más suaves que una anónima. Si algún día las respuestas parecen
+sospechosamente buenas, éste es el primer sitio donde mirar.
 
 **El dato de contacto no se guarda si la persona dice que no** quiere que la
 contacten, aunque venga en el cuerpo de la petición. Lo filtra la función, no la

@@ -3,8 +3,13 @@
 Encuesta interactiva para clientes, publicada en GitHub Pages, con panel de
 resultados propio. Sin framework ni compilación: los archivos se sirven tal cual.
 
-- **Encuesta** → `https://gabotrix.github.io/encuesta-satisfaccion/`
-- **Panel** → `https://gabotrix.github.io/encuesta-satisfaccion/panel.html`
+- **Encuesta** → `https://satisfaccion.gabotrix.com/`
+- **Panel** → `https://satisfaccion.gabotrix.com/panel.html`
+
+El dominio propio está en el archivo `CNAME`, que lo escribe GitHub al
+configurarlo. **Si se borra ese archivo, el dominio deja de funcionar.**
+`gabotrix.github.io/encuesta-satisfaccion/` redirige aquí con un 301, así que los
+enlaces repartidos antes del cambio siguen valiendo.
 
 ## Qué hay aquí
 

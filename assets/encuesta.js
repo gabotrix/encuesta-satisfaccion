@@ -631,9 +631,29 @@
       });
     }
 
+    var aviso = paso.requerido
+      ? h("div", { class: "falta", "aria-live": "polite" })
+      : null;
+
+    // Un botón apagado sin explicación es un callejón sin salida: la persona
+    // cree que terminó, pulsa, no pasa nada y se va. Aquí se dice siempre qué
+    // falta, y en todos los tamaños de pantalla — la "pista" de al lado del
+    // botón sólo se ve en escritorio.
     function revisar() {
       var b = document.getElementById("btn-siguiente");
-      if (b && paso.requerido) b.disabled = !completo();
+      var listo = completo();
+      if (b && paso.requerido) b.disabled = !listo;
+      if (aviso) {
+        var sinRellenar = paso.campos.filter(function (c) {
+          return !(respuestas[c.id] || "").trim();
+        });
+        aviso.textContent = sinRellenar.length
+          ? (sinRellenar.length === 1
+              ? "Falta contestar una de las dos"
+              : "Faltan las dos respuestas")
+          : "Listo, puede continuar";
+        aviso.setAttribute("data-listo", sinRellenar.length ? "false" : "true");
+      }
     }
 
     var campos = paso.campos.map(function (c) {
@@ -658,6 +678,7 @@
     });
 
     var bloque = h("div", {}, encabezado(paso).concat(campos).concat([
+      aviso,
       acciones({
         siguiente: "Continuar",
         bloqueado: paso.requerido && !completo(),
@@ -732,9 +753,24 @@
              (respuestas.contacto || "").trim().length > 0;
     }
 
+    var aviso = h("div", { class: "falta", "aria-live": "polite" });
+
+    // El peor callejón sin salida de la encuesta: elegir "Sí, me pueden
+    // contactar", no escribir el correo, y que el botón de enviar se quede
+    // apagado sin decir nada. La persona da por hecho que la mandó.
     function revisar() {
       var b = document.getElementById("btn-enviar");
       if (b) b.disabled = !completo();
+      if (typeof respuestas.desea_contacto !== "boolean") {
+        aviso.textContent = "Elija Sí o No para poder enviar";
+        aviso.setAttribute("data-listo", "false");
+      } else if (respuestas.desea_contacto && !(respuestas.contacto || "").trim()) {
+        aviso.textContent = "Escriba el correo o el teléfono para poder enviar";
+        aviso.setAttribute("data-listo", "false");
+      } else {
+        aviso.textContent = "Listo para enviar";
+        aviso.setAttribute("data-listo", "true");
+      }
     }
 
     entrada.addEventListener("input", revisar);
@@ -747,7 +783,7 @@
       titulo: "¿Desea que lo contactemos para ampliar sus comentarios?",
       ayuda: "Elija una de las dos. El dato de contacto no se guarda si responde que no."
     }).concat([
-      lista, desplegable,
+      lista, desplegable, aviso,
       h("div", { class: "acciones" }, [
         h("button", { type: "button", class: "pill pill-suave", texto: "Atrás", onclick: atras }),
         (function () {
@@ -765,6 +801,7 @@
       error
     ]));
 
+    revisar();
     return bloque;
   }
 
